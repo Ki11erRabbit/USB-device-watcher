@@ -55,8 +55,6 @@ int main(void)
     //printf("%s\n", homeDir);
     char initialDirectory[21] = "/sys/bus/usb/devices/";
     char buffer[50];
-    char found = 0;
-    char activated = 0;
 
     CmdSet* devices[50];
     size_t totalDevices = 0;
@@ -68,14 +66,24 @@ int main(void)
 	    printf("Could not open user home's .config\n");
 	    return 1;
     }
-
+	/*
+	 *	Reads from /home/<user's home>/.config/USB-watcher.conf
+	 *	format is vendorID/ProductID
+	 *	the command you wish to execute on plugin
+	 *	the command you wish to execute on unplug
+	 *
+	 *	when reading it ignores newlines so you can format it however you wish
+	 *	comments begin with the '#' character
+	 *	cannot go over more than 50 usb devices
+	 *
+	 */
     while ((de = readdir(homeDr)) != NULL) {
 	    if (strstr(de->d_name, "USB-watcher.conf")) {
-		    char tempBuffer[50];
-		    cat (tempBuffer, buffer, "USB-watcher.conf",1);
+		    char pathToConfig[50];
+		    cat (pathToConfig, buffer, "USB-watcher.conf",1);
 		    //printf ("%s\n", tempBuffer);
 
-		    FILE *fptr = fopen(tempBuffer, "r");
+		    FILE *fptr = fopen(pathToConfig, "r");
 		    if (fptr == NULL) {
 			    printf("Unable to open file\n");
 			    return 1;
@@ -89,7 +97,7 @@ int main(void)
 		    
 		    while (getline(&lineBuffer,&lineBufferSize,fptr)) {
 			    if (lineBuffer[0] == '\0') break;
-			    if (lineBuffer[0] == '\n') goto skip;
+			    if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') goto skip;
 
 			    //printf("%s", lineBuffer);
 			    lineCount++;
@@ -102,6 +110,10 @@ int main(void)
 			    else if (lineCount -1 == 2) {
 				unplug = strtok(lineBuffer,"\n");
 				lineCount = 0;
+				if (totalDevices == 50) {
+					printf("Error!! Too many entries\n");
+					break;
+				}
 				devices[totalDevices] = setup(vendorId, productId, plugIn,unplug);
 				totalDevices++;
 				vendorId = NULL;
