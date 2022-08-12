@@ -60,8 +60,6 @@ int main(void)
 
     CmdSet* devices[50];
     size_t totalDevices = 0;
-    CmdSet* model_m;
-    //devices[0] = setup("17f6", "0822", "model-m-helper", "setxkbmap -layout us"); 
 
     cat(buffer,homeDir, "/.config",0);
     DIR *homeDr = opendir(buffer);
@@ -75,7 +73,7 @@ int main(void)
 	    if (strstr(de->d_name, "USB-watcher.conf")) {
 		    char tempBuffer[50];
 		    cat (tempBuffer, buffer, "USB-watcher.conf",1);
-		    printf ("%s\n", tempBuffer);
+		    //printf ("%s\n", tempBuffer);
 
 		    FILE *fptr = fopen(tempBuffer, "r");
 		    if (fptr == NULL) {
@@ -88,15 +86,17 @@ int main(void)
 		    size_t lineBufferSize = 50;
 		    char lineCount = 0;
 		    char *vendorId = NULL, *productId = NULL,*plugIn = NULL,*unplug = NULL;
+		    
 		    while (getline(&lineBuffer,&lineBufferSize,fptr)) {
 			    if (lineBuffer[0] == '\0') break;
 			    if (lineBuffer[0] == '\n') goto skip;
-			    printf("%s", lineBuffer);
+
+			    //printf("%s", lineBuffer);
 			    lineCount++;
 			    if (lineCount -1 == 0 ) {
 				vendorId = strtok(lineBuffer,"/");
 			    	productId = strtok(NULL,"\n");
-				printf("%s/%s\n", vendorId, productId);
+				//printf("%s/%s\n", vendorId, productId);
 			    }
 			    else if (lineCount -1 == 1) plugIn = strtok(lineBuffer,"\n");
 			    else if (lineCount -1 == 2) {
@@ -110,16 +110,13 @@ int main(void)
 				unplug = NULL;
 			    }
 
-
-
-
-
 			    skip:
 			    lineBuffer = NULL;
 		    }
 		    fclose(fptr);
 	    }
     }
+    closedir(homeDr);
 	
 
     // Refer http://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
@@ -205,8 +202,7 @@ int main(void)
 		if (devices[i]->found == 1) {
 			if (devices[i]->activated == 0) {
 				printf("USB devices attached\n");
-				int result = system(devices[i]->onPlugIn);
-				printf("%d",result);
+				system(devices[i]->onPlugIn);
 				devices[i]->activated = 1;
 			}
 			else {
