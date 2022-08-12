@@ -1,0 +1,1 @@
+/usr/bin/cc -g -Wall -rdynamic "CMakeFiles/USB-Watcher.dir/USB-Watcher.c.o" -o USB-Watcher 
