@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#define MAXDEVICES 50
+
 typedef struct CmdSet {
 	char *idVendor;
 	char *idProduct;
@@ -66,7 +68,7 @@ int main(void)
     //printf("%s\n", homeDir);
     char buffer[50];
 
-    CmdSet* devices[50];
+CmdSet* devices[MAXDEVICES];
     size_t totalDevices = 0;
 
 	/*
@@ -77,7 +79,7 @@ int main(void)
 	 *
 	 *	when reading it ignores newlines so you can format it however you wish
 	 *	comments begin with the '#' character
-	 *	cannot go over more than 50 usb devices
+	 *	cannot go over more than MAXDEVICES usb devices which by default is 50
 	 *
 	 */
     
@@ -122,7 +124,7 @@ int main(void)
 			    else if (lineCount -1 == 2) {
 				unplug = strtok(lineBuffer,"\n");
 				lineCount = 0;
-				if (totalDevices == 50) {
+				if (totalDevices == MAXDEVICES) {
 					printf("Error!! Too many entries\n");
 					break;
 				}
@@ -268,8 +270,8 @@ int main(void)
 		devices[i]->found = 0;
 
 	}
-	sleep(1);
         closedir(dr);
+	sleep(1);
     }
     return 0;
 }
