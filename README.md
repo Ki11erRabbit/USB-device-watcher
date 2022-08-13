@@ -18,7 +18,7 @@ CMD to be executed when found
 CMD to be executed when no longer plugged in
 ```
 Comments can included by begining a line with a `#` (hash symbol, pound sign, etc). Comments cannot be on the same line as the ids or commands.
-Newlines are ignored but can be included for better readability.
+Newlines are ignored but can be included for better readability. By default the device limit is 50 devices but that can be changed by editing `MAXDEVICES`.
 
 ### Example Configuration File
 ```
