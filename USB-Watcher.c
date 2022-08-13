@@ -15,7 +15,15 @@ typedef struct CmdSet {
 } CmdSet;
 
 
-void cat (char* buffer, char* initialDirectory, char* newDirectory, char key) {
+/*
+ * cat takes in a buffer and two strings and a key value
+ * the buffer is cleared and NULLed out
+ * then the two strings are concatinated with the buffer
+ * the key value dictates weather or not the buffer needs a trailing 
+ * forward slash to reprsent a directory and not a file
+ */
+
+void cat(char* buffer, char* initialDirectory, char* newDirectory, char key) {
 
     for (int i = 0; i < 50; i++) {
         buffer[i] = '\0';
@@ -31,6 +39,12 @@ void cat (char* buffer, char* initialDirectory, char* newDirectory, char key) {
 
 }
 
+/*
+ * returns a pointer to a struct that has the vendor and product ids
+ * stored as well as the the commands to be run at plug in and unplug
+ * and two flags to indicate if the commands have been run or not and 
+ * if the device has been found in the list of devices
+ */
 CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 	CmdSet *temp = malloc(sizeof(CmdSet));
 	temp->idVendor = strdup(vendorId);
@@ -47,25 +61,14 @@ CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 
 int main(void)
 {
-    struct dirent *de; // Pointer for directory entry
-    struct dirent *nde; // Pointer for directory entry
     // opendir() returns a pointer of DIR type.
     
-    char * homeDir = getenv("HOME");
     //printf("%s\n", homeDir);
-    char initialDirectory[21] = "/sys/bus/usb/devices/";
     char buffer[50];
 
     CmdSet* devices[50];
     size_t totalDevices = 0;
 
-    cat(buffer,homeDir, "/.config",0);
-    DIR *homeDr = opendir(buffer);
-
-    if (homeDr == NULL) {
-	    printf("Could not open user home's .config\n");
-	    return 1;
-    }
 	/*
 	 *	Reads from /home/<user's home>/.config/USB-watcher.conf
 	 *	format is vendorID/ProductID
@@ -77,25 +80,34 @@ int main(void)
 	 *	cannot go over more than 50 usb devices
 	 *
 	 */
-    while ((de = readdir(homeDr)) != NULL) {
-	    if (strstr(de->d_name, "USB-watcher.conf")) {
+    
+    char *homeDir = getenv("HOME");
+    cat(buffer,homeDir, "/.config",0);
+    DIR *homeDr = opendir(buffer);
+
+    if (homeDr == NULL) {
+	    printf("Could not open user home's .config\n");
+	    return 1;
+    }
+    struct dirent *configEntry;
+    while ((configEntry = readdir(homeDr)) != NULL) {// returns a directory entry pointer to files in /home/<user's home>/.config
+	    if (strstr(configEntry->d_name, "USB-watcher.conf")) {
 		    char pathToConfig[50];
 		    cat (pathToConfig, buffer, "USB-watcher.conf",1);
 		    //printf ("%s\n", tempBuffer);
 
-		    FILE *fptr = fopen(pathToConfig, "r");
-		    if (fptr == NULL) {
+		    FILE *configFile = fopen(pathToConfig, "r");
+		    if (configFile == NULL) {
 			    printf("Unable to open file\n");
 			    return 1;
 		    }
 		    
-		    //TODO: put in logic for reading lines
 		    char *lineBuffer = NULL;
 		    size_t lineBufferSize = 50;
 		    char lineCount = 0;
 		    char *vendorId = NULL, *productId = NULL,*plugIn = NULL,*unplug = NULL;
 		    
-		    while (getline(&lineBuffer,&lineBufferSize,fptr)) {
+		    while (getline(&lineBuffer,&lineBufferSize,configFile)) {
 			    if (lineBuffer[0] == '\0') break;
 			    if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') goto skip;
 
@@ -125,14 +137,29 @@ int main(void)
 			    skip:
 			    lineBuffer = NULL;
 		    }
-		    fclose(fptr);
+		    fclose(configFile);
 	    }
     }
     closedir(homeDr);
 	
 
-    // Refer http://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
-    // for readdir()
+    /*
+     * After setup, the code enters into an infinite loop
+     * to become a daemon to watch usb devices by looping
+     * through /sys/bus/usb/devices/ entries and checking 
+     * if those entries have an idVendor and an idProduct
+     * file in them. The code will then open those files
+     * and check them against all of the devices to find
+     * a match to see if it is plugged in. The code executes
+     * every second.
+     *
+     */
+
+
+    struct dirent *de; // Pointer for directory entry
+    struct dirent *nde; // Pointer for directory entry
+    char initialDirectory[21] = "/sys/bus/usb/devices/";
+	
     while (1) {
         DIR *dr = opendir(initialDirectory);
 
@@ -161,16 +188,16 @@ int main(void)
                         cat(newbuff, buffer, nde->d_name, 1);
                         //printf("\t\t%s\n", newbuff);
 
-                        FILE *fptr = fopen(newbuff, "r");
+                        FILE *vendorFile = fopen(newbuff, "r");
 
-                        if (fptr == NULL) {
+                        if (vendorFile == NULL) {
                             printf("\tUnable to open file\n");
                             break;
                         }
 
-                        fgets(idVendor, 8, fptr);
+                        fgets(idVendor, 8, vendorFile);
                         //printf("\t\t%s\n", fileContents);
-                        fclose(fptr);
+                        fclose(vendorFile);
 
                     }
                     if (strstr(nde->d_name, "idProduct")) {
@@ -178,21 +205,22 @@ int main(void)
                         cat(newbuff, buffer, nde->d_name, 1);
                         //printf("\t\t%s\n", newbuff);
 
-                        FILE *fptr = fopen(newbuff, "r");
+                        FILE *productFile = fopen(newbuff, "r");
 
-                        if (fptr == NULL) {
+                        if (productFile == NULL) {
                             printf("\tUnable to open file\n");
                             break;
                         }
 
-                        fgets(idProduct, 8, fptr);
+                        fgets(idProduct, 8, productFile);
                         //printf("\t\t%s\n", fileContents);
-                        fclose(fptr);
+                        fclose(productFile);
                     }
 
                 }
 		for (size_t i = 0; i < totalDevices; i++) {
-					
+			if (devices[i]->found == 1) continue;//to skip over devices that have already been found.
+
                 	if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
                     		//printf("\t%s/%s\n", idVendor, idProduct);
                     		devices[i]->found = 1;
@@ -210,6 +238,12 @@ int main(void)
                 //printf("%s\n", de->d_name);
             }
         }
+	/*
+	 * loops through all devices and runs the associated
+	 * commands if they have been found. Also runs the 
+	 * associated commands for when the device is also
+	 * unplugged from the machine.
+	 */
 	for (size_t i = 0; i < totalDevices; i++) {
 		if (devices[i]->found == 1) {
 			if (devices[i]->activated == 0) {
@@ -220,10 +254,9 @@ int main(void)
 			else {
 				printf("USB device still plugged in\n");
 			}
-				sleep(1);
 		}
-		else {
-			if (devices[i]->activated == 1) {
+		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
+			if (devices[i]->activated == 1) { 
 				printf("USB device detached\n");
 				system(devices[i]->onUnplug);
 				devices[i]->activated = 0;
@@ -231,29 +264,11 @@ int main(void)
 			else {
 				printf("USB device unplugged\n");
 			}
-			sleep(1);
 		}
 		devices[i]->found = 0;
 
 	}
-       /* if (found == 1) {
-            printf("USB device attached\n");
-            if (model_m->activated == 0) {
-                sleep(1);
-                system(model_m->onPlugIn);
-                model_m->activated = 1;
-
-                sleep(5);
-            } else {
-                sleep(5);
-            }
-        } else {
-            printf("USB device detached\n");
-            sleep(1);
-            system(model_m->onUnplug);
-            model_m->activated = 0;
-        }
-        found = 0;*/
+	sleep(1);
         closedir(dr);
     }
     return 0;
