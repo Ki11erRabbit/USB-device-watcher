@@ -162,7 +162,7 @@ CmdSet* devices[MAXDEVICES];
     struct dirent *nde; // Pointer for directory entry
     char initialDirectory[21] = "/sys/bus/usb/devices/";
 	
-    while (1) {
+    while (1) {//infinite loop to become a daemon
         DIR *dr = opendir(initialDirectory);
 
         if (dr == NULL) // opendir returns NULL if couldn't open directory
@@ -171,7 +171,7 @@ CmdSet* devices[MAXDEVICES];
             continue;
         }
 
-        while ((de = readdir(dr)) != NULL) {
+        while ((de = readdir(dr)) != NULL) {//loops through all entries in the directory '/sys/bus/usb/devices/'
 
             if (strstr(de->d_name, "-")) {
                 cat(buffer, initialDirectory, de->d_name, 0);
@@ -182,7 +182,7 @@ CmdSet* devices[MAXDEVICES];
                 }
                 char idVendor[8];
                 char idProduct[8];
-                while ((nde = readdir(ndr)) != NULL) {
+                while ((nde = readdir(ndr)) != NULL) {//loops though all files in '/sys/bus/usb/devices/*/'
 
                     if (strstr(nde->d_name, "idVendor")) {
                         //printf("\t%s\n", buffer);
@@ -220,7 +220,7 @@ CmdSet* devices[MAXDEVICES];
                     }
 
                 }
-		for (size_t i = 0; i < totalDevices; i++) {
+		for (size_t i = 0; i < totalDevices; i++) {//checks to see if the current ids match any of the products
 			if (devices[i]->found == 1) continue;//to skip over devices that have already been found.
 
                 	if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
@@ -230,6 +230,7 @@ CmdSet* devices[MAXDEVICES];
                         		idVendor[i] = '\0';
                         		idProduct[i] = '\0';
                     		}
+				break;// skips looping through remaining devices. If you want multple commands to be executed use a script!
                 	}
 
 
