@@ -60,6 +60,41 @@ CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 	return temp;
 }
 
+	/*
+	 * loops through all devices and runs the associated
+	 * commands if they have been found. Also runs the 
+	 * associated commands for when the device is also
+	 * unplugged from the machine.
+	 */
+void executeDevices(CmdSet *devices[MAXDEVICES], size_t totalDevices) {
+
+	for (size_t i = 0; i < totalDevices; i++) {
+		if (devices[i]->found == 1) {
+			if (devices[i]->activated == 0) {
+				printf("USB devices attached\n");
+				system(devices[i]->onPlugIn);
+				devices[i]->activated = 1;
+			}
+			else {
+				printf("USB device still plugged in\n");
+			}
+		}
+		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
+			if (devices[i]->activated == 1) { 
+				printf("USB device detached\n");
+				system(devices[i]->onUnplug);
+				devices[i]->activated = 0;
+			}
+			else {
+				printf("USB device unplugged\n");
+			}
+		}
+		devices[i]->found = 0;
+
+	}
+
+}
+
 
 
 int main(void)
@@ -76,7 +111,7 @@ int main(void)
     //printf("%s\n", homeDir);
     char buffer[50];
 
-CmdSet* devices[MAXDEVICES];
+    CmdSet *devices[MAXDEVICES];
     size_t totalDevices = 0;
 
 	/*
@@ -90,14 +125,13 @@ CmdSet* devices[MAXDEVICES];
 	 *	cannot go over more than MAXDEVICES usb devices which by default is 50
 	 *
 	 */
-    
     char *homeDir = getenv("HOME");
     cat(buffer,homeDir, "/.config",0);
     DIR *homeDr = opendir(buffer);
 
     if (homeDr == NULL) {
 	    printf("Could not open user home's .config\n");
-	    return 1;
+	    exit(1);
     }
     struct dirent *configEntry;
     while ((configEntry = readdir(homeDr)) != NULL) {// returns a directory entry pointer to files in /home/<user's home>/.config
@@ -109,7 +143,7 @@ CmdSet* devices[MAXDEVICES];
 		    FILE *configFile = fopen(pathToConfig, "r");
 		    if (configFile == NULL) {
 			    printf("Unable to open file\n");
-			    return 1;
+			    exit(1);
 		    }
 		    
 		    char *lineBuffer = NULL;
@@ -119,7 +153,7 @@ CmdSet* devices[MAXDEVICES];
 		    
 		    while (getline(&lineBuffer,&lineBufferSize,configFile)) {
 			    if (lineBuffer[0] == '\0') break;
-			    if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') goto skip;
+			    if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') {lineBuffer = NULL; continue;}
 
 			    //printf("%s", lineBuffer);
 			    lineCount++;
@@ -144,7 +178,6 @@ CmdSet* devices[MAXDEVICES];
 				unplug = NULL;
 			    }
 
-			    skip:
 			    lineBuffer = NULL;
 		    }
 		    fclose(configFile);
@@ -152,7 +185,6 @@ CmdSet* devices[MAXDEVICES];
     }
     closedir(homeDr);
 	
-
     /*
      * After setup, the code enters into an infinite loop
      * to become a daemon to watch usb devices by looping
@@ -238,7 +270,7 @@ CmdSet* devices[MAXDEVICES];
                         		idVendor[i] = '\0';
                         		idProduct[i] = '\0';
                     		}
-				break;// skips looping through remaining devices. If you want multple commands to be executed use a script!
+				break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
                 	}
 
 
@@ -249,38 +281,19 @@ CmdSet* devices[MAXDEVICES];
                 //printf("%s\n", de->d_name);
             }
         }
+        closedir(dr);
 	/*
 	 * loops through all devices and runs the associated
 	 * commands if they have been found. Also runs the 
 	 * associated commands for when the device is also
 	 * unplugged from the machine.
 	 */
-	for (size_t i = 0; i < totalDevices; i++) {
-		if (devices[i]->found == 1) {
-			if (devices[i]->activated == 0) {
-				printf("USB devices attached\n");
-				system(devices[i]->onPlugIn);
-				devices[i]->activated = 1;
-			}
-			else {
-				printf("USB device still plugged in\n");
-			}
-		}
-		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
-			if (devices[i]->activated == 1) { 
-				printf("USB device detached\n");
-				system(devices[i]->onUnplug);
-				devices[i]->activated = 0;
-			}
-			else {
-				printf("USB device unplugged\n");
-			}
-		}
-		devices[i]->found = 0;
+	executeDevices(devices, totalDevices);
 
-	}
-        closedir(dr);
 	sleep(1);
     }
     return 0;
 }
+
+
+
