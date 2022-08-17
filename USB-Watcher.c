@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <zconf.h>
 
 #define MAXDEVICES 50
 
@@ -64,7 +65,14 @@ CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 int main(void)
 {
     // opendir() returns a pointer of DIR type.
-    
+    {// scoping to not have extra variables
+    int user;
+    user = getuid();
+    if (user == 0) {
+	    printf("Error, don't run as root\n");
+	    return 1;
+    }
+    }
     //printf("%s\n", homeDir);
     char buffer[50];
 
