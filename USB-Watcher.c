@@ -66,7 +66,7 @@ CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 	 * associated commands for when the device is also
 	 * unplugged from the machine.
 	 */
-void executeDevices(CmdSet *devices[MAXDEVICES], size_t totalDevices) {
+void executeDevices(CmdSet **devices, size_t totalDevices) {
 
 	for (size_t i = 0; i < totalDevices; i++) {
 		if (devices[i]->found == 1) {
@@ -95,36 +95,20 @@ void executeDevices(CmdSet *devices[MAXDEVICES], size_t totalDevices) {
 
 }
 
-
-
-int main(void)
-{
-    // opendir() returns a pointer of DIR type.
-    {// scoping to not have extra variables
-    int user;
-    user = getuid();
-    if (user == 0) {
-	    printf("Error, don't run as root\n");
-	    return 1;
-    }
-    }
-    //printf("%s\n", homeDir);
+/*
+ *	Reads from /home/<user's home>/.config/USB-watcher.conf
+ *	format is vendorID/ProductID
+ *	the command you wish to execute on plugin
+ *	the command you wish to execute on unplug
+ *
+ *	when reading it ignores newlines so you can format it however you wish
+ *	comments begin with the '#' character
+ *	cannot go over more than MAXDEVICES usb devices which by default is 50
+ *
+ */
+void setupDevices( CmdSet **devices, size_t *totalDevices) {
     char buffer[50];
 
-    CmdSet *devices[MAXDEVICES];
-    size_t totalDevices = 0;
-
-	/*
-	 *	Reads from /home/<user's home>/.config/USB-watcher.conf
-	 *	format is vendorID/ProductID
-	 *	the command you wish to execute on plugin
-	 *	the command you wish to execute on unplug
-	 *
-	 *	when reading it ignores newlines so you can format it however you wish
-	 *	comments begin with the '#' character
-	 *	cannot go over more than MAXDEVICES usb devices which by default is 50
-	 *
-	 */
     char *homeDir = getenv("HOME");
     cat(buffer,homeDir, "/.config",0);
     DIR *homeDr = opendir(buffer);
@@ -166,12 +150,12 @@ int main(void)
 			    else if (lineCount -1 == 2) {
 				unplug = strtok(lineBuffer,"\n");
 				lineCount = 0;
-				if (totalDevices == MAXDEVICES) {
+				if (*totalDevices == MAXDEVICES) {
 					printf("Error!! Too many entries\n");
 					break;
 				}
-				devices[totalDevices] = setup(vendorId, productId, plugIn,unplug);
-				totalDevices++;
+				devices[*totalDevices] = setup(vendorId, productId, plugIn,unplug);
+				(*totalDevices)++;
 				vendorId = NULL;
 				productId = NULL;
 				plugIn = NULL;
@@ -184,31 +168,26 @@ int main(void)
 	    }
     }
     closedir(homeDr);
-	
-    /*
-     * After setup, the code enters into an infinite loop
-     * to become a daemon to watch usb devices by looping
-     * through /sys/bus/usb/devices/ entries and checking 
-     * if those entries have an idVendor and an idProduct
-     * file in them. The code will then open those files
-     * and check them against all of the devices to find
-     * a match to see if it is plugged in. The code executes
-     * every second.
-     *
-     */
+
+}
 
 
+/*
+ * Marks the found flag in the devices if it finds them while parsing '/sys/bus/usb/devics/'
+ *
+ */
+void findDevices(CmdSet **devices, size_t totalDevices) {
+    char buffer[50];
     struct dirent *de; // Pointer for directory entry
     struct dirent *nde; // Pointer for directory entry
     char initialDirectory[21] = "/sys/bus/usb/devices/";
-	
-    while (1) {//infinite loop to become a daemon
+
         DIR *dr = opendir(initialDirectory);
 
         if (dr == NULL) // opendir returns NULL if couldn't open directory
         {
-            printf("Could not open current directory" );
-            continue;
+            printf("Could not open current directory\n" );
+            return;
         }
 
         while ((de = readdir(dr)) != NULL) {//loops through all entries in the directory '/sys/bus/usb/devices/'
@@ -266,9 +245,9 @@ int main(void)
                 	if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
                     		//printf("\t%s/%s\n", idVendor, idProduct);
                     		devices[i]->found = 1;
-                    		for (int i = 0; i < 8; i++) {
-                        		idVendor[i] = '\0';
-                        		idProduct[i] = '\0';
+                    		for (int j = 0; j < 8; j++) {
+                        		idVendor[j] = '\0';
+                        		idProduct[j] = '\0';
                     		}
 				break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
                 	}
@@ -282,6 +261,39 @@ int main(void)
             }
         }
         closedir(dr);
+}
+
+int main(void)
+{
+    // opendir() returns a pointer of DIR type.
+    {// scoping to not have extra variables
+    int user;
+    user = getuid();
+    if (user == 0) {
+	    printf("Error, don't run as root\n");
+	    return 1;
+    }
+    }
+    //printf("%s\n", homeDir);
+
+    CmdSet **devices = malloc(sizeof(CmdSet *) * MAXDEVICES);
+    size_t totalDevices = 0;
+
+    setupDevices(devices, &totalDevices);	
+    /*
+     * After setup, the code enters into an infinite loop
+     * to become a daemon to watch usb devices by looping
+     * through /sys/bus/usb/devices/ entries and checking 
+     * if those entries have an idVendor and an idProduct
+     * file in them. The code will then open those files
+     * and check them against all of the devices to find
+     * a match to see if it is plugged in. The code executes
+     * every second.
+     *
+     */
+	
+    while (1) {//infinite loop to become a daemon
+	findDevices(devices, totalDevices);
 	/*
 	 * loops through all devices and runs the associated
 	 * commands if they have been found. Also runs the 
@@ -292,6 +304,7 @@ int main(void)
 
 	sleep(1);
     }
+
     return 0;
 }
 
