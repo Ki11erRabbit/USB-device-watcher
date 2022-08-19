@@ -1,3 +1,0 @@
-/home/ki11errabbit/git/USB-device-watcher/build/CMakeFiles/USB-Watcher.dir
-/home/ki11errabbit/git/USB-device-watcher/build/CMakeFiles/edit_cache.dir
-/home/ki11errabbit/git/USB-device-watcher/build/CMakeFiles/rebuild_cache.dir
