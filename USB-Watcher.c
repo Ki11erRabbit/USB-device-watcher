@@ -156,7 +156,7 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
 
         if (dr == NULL) // opendir returns NULL if couldn't open directory
         {
-            printf("Could not open current directory\n" );
+            printf("Could not open %s\n", initialDirectory );
             return;
         }
 
@@ -166,7 +166,7 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
                 cat(buffer, initialDirectory, de->d_name, 0);
                 DIR *ndr = opendir(buffer);
                 if (ndr == NULL) {
-                    printf("Could not open current directory");
+                    printf("Could not open %s\n",buffer);
                     break;
                 }
                 char idVendor[8];
