@@ -1,7 +1,7 @@
 # USB-device-watcher
 Can't figure out Udev? This allows you to run a command when a usb device is plugged or unplugged
 
-This not very well named peice of software monitors USB devices on Linux systems and allows users to execute commands when a specific USB device is plugged in or unplugged.
+This not very well named peice of software monitors USB devices on Linux systems and allows users to execute commands when a specific USB device is plugged in or unplugged. This program should not be run as root and currently terminates if run as root.
 ## How it works
 - It begins by parsing a configuration file at `~/.config/` (`/home/<user's home>/.config`) called `USB-watcher.conf`. the format is specified below.
 - It works by parsing `/sys/bus/usb/devices/` and only searching the files that contain a `-`(hyphen) which will be a currently plugged in USB device.

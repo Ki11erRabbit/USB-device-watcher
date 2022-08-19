@@ -60,50 +60,16 @@ CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
 	return temp;
 }
 
-	/*
-	 * loops through all devices and runs the associated
-	 * commands if they have been found. Also runs the 
-	 * associated commands for when the device is also
-	 * unplugged from the machine.
-	 */
-void executeDevices(CmdSet **devices, size_t totalDevices) {
-
-	for (size_t i = 0; i < totalDevices; i++) {
-		if (devices[i]->found == 1) {
-			if (devices[i]->activated == 0) {
-				printf("USB devices attached\n");
-				system(devices[i]->onPlugIn);
-				devices[i]->activated = 1;
-			}
-			else {
-				printf("USB device still plugged in\n");
-			}
-		}
-		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
-			if (devices[i]->activated == 1) { 
-				printf("USB device detached\n");
-				system(devices[i]->onUnplug);
-				devices[i]->activated = 0;
-			}
-			else {
-				printf("USB device unplugged\n");
-			}
-		}
-		devices[i]->found = 0;
-
-	}
-
-}
 
 /*
- *	Reads from /home/<user's home>/.config/USB-watcher.conf
- *	format is vendorID/ProductID
- *	the command you wish to execute on plugin
- *	the command you wish to execute on unplug
+ * Reads from /home/<user's home>/.config/USB-watcher.conf
+ * format is vendorID/ProductID
+ * the command you wish to execute on plugin
+ * the command you wish to execute on unplug
  *
- *	when reading it ignores newlines so you can format it however you wish
- *	comments begin with the '#' character
- *	cannot go over more than MAXDEVICES usb devices which by default is 50
+ * when reading it ignores newlines so you can format it however you wish
+ * comments begin with the '#' character
+ * cannot go over more than MAXDEVICES usb devices which by default is 50
  *
  */
 void setupDevices( CmdSet **devices, size_t *totalDevices) {
@@ -173,8 +139,12 @@ void setupDevices( CmdSet **devices, size_t *totalDevices) {
 
 
 /*
- * Marks the found flag in the devices if it finds them while parsing '/sys/bus/usb/devics/'
- *
+ * Marks the found flag in the devices if it finds them while parsing
+ * through /sys/bus/usb/devices/ entries and checking 
+ * if those entries have an idVendor and an idProduct
+ * file in them. The code will then open those files
+ * and check them against all of the devices to find
+ * a match to see if it is plugged in.
  */
 void findDevices(CmdSet **devices, size_t totalDevices) {
     char buffer[50];
@@ -263,6 +233,41 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
         closedir(dr);
 }
 
+/*
+ * loops through all devices and runs the associated
+ * commands if they have been found. Also runs the 
+ * associated commands for when the device is also
+ * unplugged from the machine.
+ */
+void executeDevices(CmdSet **devices, size_t totalDevices) {
+
+	for (size_t i = 0; i < totalDevices; i++) {
+		if (devices[i]->found == 1) {
+			if (devices[i]->activated == 0) {
+				printf("USB devices attached\n");
+				system(devices[i]->onPlugIn);
+				devices[i]->activated = 1;
+			}
+			else {
+				printf("USB device still plugged in\n");
+			}
+		}
+		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
+			if (devices[i]->activated == 1) { 
+				printf("USB device detached\n");
+				system(devices[i]->onUnplug);
+				devices[i]->activated = 0;
+			}
+			else {
+				printf("USB device unplugged\n");
+			}
+		}
+		devices[i]->found = 0;
+
+	}
+
+}
+
 int main(void)
 {
     // opendir() returns a pointer of DIR type.
@@ -282,13 +287,8 @@ int main(void)
     setupDevices(devices, &totalDevices);	
     /*
      * After setup, the code enters into an infinite loop
-     * to become a daemon to watch usb devices by looping
-     * through /sys/bus/usb/devices/ entries and checking 
-     * if those entries have an idVendor and an idProduct
-     * file in them. The code will then open those files
-     * and check them against all of the devices to find
-     * a match to see if it is plugged in. The code executes
-     * every second.
+     * to become a daemon to watch usb devices via the findDevices function.
+     * The code executes every second.
      *
      */
 	
@@ -296,8 +296,8 @@ int main(void)
 	findDevices(devices, totalDevices);
 	/*
 	 * loops through all devices and runs the associated
-	 * commands if they have been found. Also runs the 
-	 * associated commands for when the device is also
+	 * commands if they have been found via the executeDevices function.
+	 * Also runs the associated commands for when the device is
 	 * unplugged from the machine.
 	 */
 	executeDevices(devices, totalDevices);
