@@ -150,7 +150,7 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
     char buffer[50];
     struct dirent *de; // Pointer for directory entry
     struct dirent *nde; // Pointer for directory entry
-    char initialDirectory[21] = "/sys/bus/usb/devices/";
+    char initialDirectory[22] = "/sys/bus/usb/devices/";
 
         DIR *dr = opendir(initialDirectory);
 
