@@ -210,7 +210,9 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
 
                 }
 		for (size_t i = 0; i < totalDevices; i++) {//checks to see if the current ids match any of the products
-			if (devices[i]->found == 1) continue;//to skip over devices that have already been found.
+			if (devices[i]->found == 1) { 
+                continue;//to skip over devices that have already been found.
+            }
 
                 	if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
                     		//printf("\t%s/%s\n", idVendor, idProduct);
@@ -219,7 +221,7 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
                         		idVendor[j] = '\0';
                         		idProduct[j] = '\0';
                     		}
-				break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
+				        break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
                 	}
 
 
