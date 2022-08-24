@@ -9,12 +9,12 @@
 #define MAXDEVICES 50
 
 typedef struct CmdSet {
-	char *idVendor;
-	char *idProduct;
-	char *onPlugIn;
-	char *onUnplug;
-	char activated;
-	char found;
+    char *idVendor;
+    char *idProduct;
+    char *onPlugIn;
+    char *onUnplug;
+    char activated;
+    char found;
 } CmdSet;
 
 
@@ -49,15 +49,15 @@ void cat(char* buffer, char* initialDirectory, char* newDirectory, char key) {
  * if the device has been found in the list of devices
  */
 CmdSet* setup(char* vendorId,char* productId, char* onPlugIn, char* onUnplug) {
-	CmdSet *temp = malloc(sizeof(CmdSet));
-	temp->idVendor = strdup(vendorId);
-	temp->idProduct = strdup(productId);
-	temp->onPlugIn = strdup(onPlugIn);
-	temp->onUnplug = strdup(onUnplug);
-	temp->activated = 0;
-	temp->found = 0;
+    CmdSet *temp = malloc(sizeof(CmdSet));
+    temp->idVendor = strdup(vendorId);
+    temp->idProduct = strdup(productId);
+    temp->onPlugIn = strdup(onPlugIn);
+    temp->onUnplug = strdup(onUnplug);
+    temp->activated = 0;
+    temp->found = 0;
 
-	return temp;
+    return temp;
 }
 
 
@@ -80,28 +80,28 @@ void setupDevices( CmdSet **devices, size_t *totalDevices) {
     DIR *homeDr = opendir(buffer);
 
     if (homeDr == NULL) {
-	    printf("Could not open user home's .config\n");
-	    exit(1);
+        printf("Could not open user home's .config\n");
+        exit(1);
     }
     struct dirent *configEntry;
     while ((configEntry = readdir(homeDr)) != NULL) {// returns a directory entry pointer to files in /home/<user's home>/.config
-	    if (strstr(configEntry->d_name, "USB-watcher.conf")) {
-		    char pathToConfig[50];
-		    cat (pathToConfig, buffer, "USB-watcher.conf",1);
-		    //printf ("%s\n", tempBuffer);
+        if (strstr(configEntry->d_name, "USB-watcher.conf")) {
+            char pathToConfig[50];
+            cat (pathToConfig, buffer, "USB-watcher.conf",1);
+            //printf ("%s\n", tempBuffer);
 
-		    FILE *configFile = fopen(pathToConfig, "r");
-		    if (configFile == NULL) {
-			    printf("Unable to open file\n");
-			    exit(1);
-		    }
+            FILE *configFile = fopen(pathToConfig, "r");
+            if (configFile == NULL) {
+                printf("Unable to open file\n");
+                exit(1);
+            }
 		    
-		    char *lineBuffer = NULL;
-		    size_t lineBufferSize = 50;
-		    char lineCount = 0;
-		    char *vendorId = NULL, *productId = NULL,*plugIn = NULL,*unplug = NULL;
+            char *lineBuffer = NULL;
+            size_t lineBufferSize = 50;
+            char lineCount = 0;
+            char *vendorId = NULL, *productId = NULL,*plugIn = NULL,*unplug = NULL;
 		    
-		    while (getline(&lineBuffer,&lineBufferSize,configFile)) {
+            while (getline(&lineBuffer,&lineBufferSize,configFile)) {
                 if (lineBuffer[0] == '\0') 
                     break;
                 if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') {
@@ -109,35 +109,35 @@ void setupDevices( CmdSet **devices, size_t *totalDevices) {
                     continue;
                 }
 
-			    //printf("%s", lineBuffer);
-			    lineCount++;
-			    if (lineCount -1 == 0 ) {
-				vendorId = strtok(lineBuffer,"/");
+                //printf("%s", lineBuffer);
+                lineCount++;
+                if (lineCount -1 == 0 ) {
+                    vendorId = strtok(lineBuffer,"/");
                     productId = strtok(NULL,"\n");
-				//printf("%s/%s\n", vendorId, productId);
-			    }
-			    else if (lineCount -1 == 1) {
+                //printf("%s/%s\n", vendorId, productId);
+                }
+                else if (lineCount -1 == 1) {
                     plugIn = strtok(lineBuffer,"\n");
                 }
-			    else if (lineCount -1 == 2) {
-				unplug = strtok(lineBuffer,"\n");
-				lineCount = 0;
-				if (*totalDevices == MAXDEVICES) {
-					printf("Error!! Too many entries\n");
-					break;
-				}
-				devices[*totalDevices] = setup(vendorId, productId, plugIn,unplug);
-				(*totalDevices)++;
-				vendorId = NULL;
-				productId = NULL;
-				plugIn = NULL;
-				unplug = NULL;
-			    }
+                else if (lineCount -1 == 2) {
+                    unplug = strtok(lineBuffer,"\n");
+                    lineCount = 0;
+                if (*totalDevices == MAXDEVICES) {
+                    printf("Error!! Too many entries\n");
+                    break;
+                }
+                devices[*totalDevices] = setup(vendorId, productId, plugIn,unplug);
+                (*totalDevices)++;
+                vendorId = NULL;
+                productId = NULL;
+                plugIn = NULL;
+                unplug = NULL;
+                }
 
-			    lineBuffer = NULL;
-		    }
-		    fclose(configFile);
-	    }
+                lineBuffer = NULL;
+            }
+            fclose(configFile);
+        }
     }
     closedir(homeDr);
 
@@ -215,23 +215,23 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
                     }
 
                 }
-		for (size_t i = 0; i < totalDevices; i++) {//checks to see if the current ids match any of the products
-			if (devices[i]->found == 1) { 
+        for (size_t i = 0; i < totalDevices; i++) {//checks to see if the current ids match any of the products
+            if (devices[i]->found == 1) { 
                 continue;//to skip over devices that have already been found.
             }
 
-                	if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
-                    		//printf("\t%s/%s\n", idVendor, idProduct);
-                    		devices[i]->found = 1;
-                    		for (int j = 0; j < 8; j++) {
-                        		idVendor[j] = '\0';
-                        		idProduct[j] = '\0';
-                    		}
-				        break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
-                	}
+                if (strstr(idVendor, devices[i]->idVendor) && strstr(idProduct, devices[i]->idProduct)) {
+                    //printf("\t%s/%s\n", idVendor, idProduct);
+                    devices[i]->found = 1;
+                    for (int j = 0; j < 8; j++) {
+                        idVendor[j] = '\0';
+                        idProduct[j] = '\0';
+                    }
+                    break;// skips looping through remaining devices. If you want multple commands to be executed, use a script!
+                }
 
 
-		}
+        }
 
 
                 closedir(ndr);
@@ -249,30 +249,30 @@ void findDevices(CmdSet **devices, size_t totalDevices) {
  */
 void executeDevices(CmdSet **devices, size_t totalDevices) {
 
-	for (size_t i = 0; i < totalDevices; i++) {
-		if (devices[i]->found == 1) {
-			if (devices[i]->activated == 0) {
-				printf("USB devices attached\n");
-				system(devices[i]->onPlugIn);
-				devices[i]->activated = 1;
-			}
-			else {
-				printf("USB device still plugged in\n");
-			}
-		}
-		else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
-			if (devices[i]->activated == 1) { 
-				printf("USB device detached\n");
-				system(devices[i]->onUnplug);
-				devices[i]->activated = 0;
-			}
-			else {
-				printf("USB device unplugged\n");
-			}
-		}
-		devices[i]->found = 0;
+    for (size_t i = 0; i < totalDevices; i++) {
+        if (devices[i]->found == 1) {
+            if (devices[i]->activated == 0) {
+                printf("USB devices attached\n");
+                system(devices[i]->onPlugIn);
+                devices[i]->activated = 1;
+            }
+            else {
+                printf("USB device still plugged in\n");
+            }
+        }
+        else {// checking for if it has been activated is the perfect test to not constantly run the unplug command
+            if (devices[i]->activated == 1) { 
+                printf("USB device detached\n");
+                system(devices[i]->onUnplug);
+                devices[i]->activated = 0;
+            }
+            else {
+                printf("USB device unplugged\n");
+            }
+        }
+        devices[i]->found = 0;
 
-	}
+    }
 
 }
 
@@ -301,16 +301,16 @@ int main(void)
      */
 	
     while (1) {//infinite loop to become a daemon
-	findDevices(devices, totalDevices);
+    findDevices(devices, totalDevices);
 	/*
 	 * loops through all devices and runs the associated
 	 * commands if they have been found via the executeDevices function.
 	 * Also runs the associated commands for when the device is
 	 * unplugged from the machine.
 	 */
-	executeDevices(devices, totalDevices);
+    executeDevices(devices, totalDevices);
 
-	sleep(1);
+    sleep(1);
     }
 
     return 0;
