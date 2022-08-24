@@ -102,9 +102,9 @@ void setupDevices( CmdSet **devices, size_t *totalDevices) {
 		    char *vendorId = NULL, *productId = NULL,*plugIn = NULL,*unplug = NULL;
 		    
 		    while (getline(&lineBuffer,&lineBufferSize,configFile)) {
-			    if (lineBuffer[0] == '\0') 
+                if (lineBuffer[0] == '\0') 
                     break;
-			    if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') {
+                if (lineBuffer[0] == '\n' || lineBuffer[0] == '#') {
                     lineBuffer = NULL; 
                     continue;
                 }
@@ -113,7 +113,7 @@ void setupDevices( CmdSet **devices, size_t *totalDevices) {
 			    lineCount++;
 			    if (lineCount -1 == 0 ) {
 				vendorId = strtok(lineBuffer,"/");
-			    	productId = strtok(NULL,"\n");
+                    productId = strtok(NULL,"\n");
 				//printf("%s/%s\n", vendorId, productId);
 			    }
 			    else if (lineCount -1 == 1) {
