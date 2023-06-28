@@ -280,13 +280,29 @@ int main(void)
 {
     // opendir() returns a pointer of DIR type.
     {// scoping to not have extra variables
-    int user;
-    user = getuid();
-    if (user == 0) {
-	    printf("Error, don't run as root\n");
-	    return 1;
+        int user;
+        user = getuid();
+        if (user == 0) {
+	        printf("Error, don't run as root\n");
+	        return 1;
+        }
     }
+    
+    if (access("/tmp/usbwatch.pid", F_OK) == 0) {
+        printf("Error, usbwatch is already running\n");
+        return 3;
     }
+
+    FILE *pid_file = fopen("/tmp/usbwatch.pid", "w");
+    if (pid_file == NULL) {
+        printf("Error, could not open pid file\n");
+        return 1;
+    }
+    fprintf(pid_file, "%d", getpid());
+    fclose(pid_file);
+
+
+
     //printf("%s\n", homeDir);
 
     CmdSet **devices = malloc(sizeof(CmdSet *) * MAXDEVICES);
@@ -299,7 +315,13 @@ int main(void)
      * The code executes every second.
      *
      */
-	
+    int forkVal = fork();
+
+    if (forkVal == -1)
+        exit(1);
+    else if (forkVal != 0)
+        exit(2);
+
     while (1) {//infinite loop to become a daemon
     findDevices(devices, totalDevices);
 	/*
